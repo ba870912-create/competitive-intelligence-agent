@@ -1,0 +1,16 @@
+﻿langgraph
+langchain-ollama
+fastapi
+uvicorn
+fastmcp
+neo4j
+qdrant-client
+sqlalchemy
+psycopg2-binary
+streamlit
+slack_sdk
+apscheduler
+pydantic
+httpx
+python-dotenv
+beautifulsoup4
