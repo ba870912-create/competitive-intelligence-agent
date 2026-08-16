@@ -24,10 +24,70 @@ Five agents run in a sequential/parallel LangGraph pipeline, each with a single 
 | **Change-Log Agent** | Diffs this run's graph state against the last stored snapshot and surfaces a "What's New" section |
 
 ```
-Research → Fact-Check ─┬─→ Graph-Builder ─┐
-                        └─→ Alerting       ├─→ Analyst → Change-Log → Slack
-                                            ┘
+┌─────────────────┐
+│  Research Agent  │  Pulls pricing pages, careers pages, news via MCP tools
+│                  │  (Playwright renders JS-heavy pages) → extracts RawClaims
+└────────┬─────────┘
+         │  raw_claims[]
+         ▼
+┌─────────────────┐
+│ Fact-Checker     │  Groups & normalizes claims, requires 2+ independent
+│ Agent            │  sources for announcements (pricing/hiring trusted
+│                  │  first-party) → VerifiedClaims with sentiment scores
+└────────┬─────────┘
+         │  verified_claims[]
+         │
+         ├──────────────────────────────┐
+         ▼                              ▼
+┌─────────────────┐          ┌─────────────────────┐
+│ Graph-Builder    │          │ Alerting Agent       │
+│ Agent            │          │                       │
+│ • Writes Entity  │          │ Scans for high-impact │
+│   -[RELATION]->  │          │ events (acquisition,  │
+│   Entity edges   │          │ funding, layoffs) →   │
+│   into Neo4j      │          │ pings Slack           │
+│ • Records         │          │ IMMEDIATELY, before   │
+│   PricePoint      │          │ the weekly digest is  │
+│   nodes for       │          │ even generated        │
+│   change tracking │          │                       │
+│ • Embeds          │          └───────────┬───────────┘
+│   announcement     │                      │
+│   text into Qdrant │                      │
+└────────┬───────────┘                      │
+         │  graph_edges[]                   │  alerts_sent[]
+         │  (runs in parallel with Alerting)│
+         └───────────────┬───────────────────┘
+                          ▼   (both branches must complete)
+                ┌──────────────────────┐
+                │  Analyst/Synthesizer  │  GraphRAG: combines
+                │  Agent                │  • Cypher traversal (exact —
+                │                        │    "who changed pricing twice?",
+                │                        │    "did price X actually change?")
+                │                        │  • Qdrant semantic search (fuzzy —
+                │                        │    "who's talking about AI features?")
+                │                        │  → writes structured, cited
+                │                        │    WeeklyBrief sections
+                └───────────┬────────────┘
+                            │  brief
+                            ▼
+                ┌──────────────────────┐
+                │  Change-Log Agent     │  Diffs this run's graph_edges
+                │                        │  against last week's stored
+                │                        │  snapshot (Postgres) → appends
+                │                        │  "What's New This Week"
+                └───────────┬────────────┘
+                            │
+                            ▼
+                  📬 Formatted digest posted to Slack
+                  💾 Brief + snapshot saved to Postgres
+                  🕸️  Graph available in dashboard explorer
 ```
+
+**Why this shape:**
+- **Fact-Check gates everything downstream** — nothing reaches the graph, the alert, or the brief without passing source verification first.
+- **Graph-Builder and Alerting run in parallel**, not sequentially — an acquisition or layoff announcement doesn't wait for the (slower) graph-writing step to finish before Slack gets pinged. This is what makes the alert genuinely "immediate" rather than "immediate, but only after everything else is done."
+- **Analyst waits for both branches** to complete, because GraphRAG synthesis needs the graph data `Graph-Builder` just wrote — this is the one required sync point in an otherwise concurrent pipeline.
+- **Change-Log runs last**, after the brief exists, so its snapshot always reflects exactly what was reported that week.
 
 ## ✨ Key Features
 
