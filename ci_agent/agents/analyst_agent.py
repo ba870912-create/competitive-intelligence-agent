@@ -76,14 +76,27 @@ Write these 4 sections: Pricing Moves, Product Announcements, Hiring Signals, No
 
 CRITICAL: Every section must cover EVERY competitor listed above that has relevant data
 in "All verified claims this week" below -- do not limit any section to just one or two
-competitors. Go through the verified claims list and group by claim_type:
-- "pricing" claims -> Pricing Moves (one sentence per competitor with a pricing claim)
-- "hiring" claims -> Hiring Signals: for each competitor with hiring claims, write
-  their name as a bold sub-line, then list EVERY SINGLE job title from their claims
-  (not just some of them) as a bullet using "\\n- " within the content string, each
-  job title copied VERBATIM including details like "(Fall 2026)" or "Early Career"
+competitors.
+
+FORMATTING RULE FOR ALL FOUR SECTIONS (Pricing Moves, Product Announcements, Hiring
+Signals, Notable Trends): within each section's "content" string, organize by
+competitor. For each competitor that has at least one claim relevant to that section,
+write their name as its own bold line ("**CompetitorName**"), then list EVERY relevant
+claim for that competitor as a separate bullet point using "\n- " on the line(s)
+immediately after. Never merge multiple claims from the same competitor into a single
+sentence or paragraph, and never combine claims from different competitors into one
+bullet. Structure looks like:
+"**CompetitorA**\n- claim one\n- claim two\n\n**CompetitorB**\n- claim one"
+
+Group the claims by claim_type per section:
+- "pricing" claims -> Pricing Moves
+- "hiring" claims -> Hiring Signals
 - "announcement" claims -> split across Product Announcements and Notable Trends based
   on whether it's a product-level update vs a broader business/market signal
+
+Copy each claim's text VERBATIM (job titles, prices, dates, percentages) -- do not
+paraphrase or shorten specific facts. A competitor with zero claims for a section is
+simply omitted from that section, but never omit one that DOES have relevant claims.
 
 When writing any section, always use the exact wording, numbers, dates, and names from
 the claim text -- do not paraphrase or shorten specific facts (job titles, prices,
@@ -96,7 +109,8 @@ competitor's claim came first in the data.
 
 For "Pricing Moves": if "Pricing changes detected since last run" has entries, describe
 each change explicitly (old price -> new price) in addition to the current-price summary
-above. If that list is empty, just state current prices per competitor.
+above. If that list is empty, START the section with the exact sentence "No pricing
+changes detected since last run." before listing current prices per competitor.
 
 Every citation must be a real source_url taken from the data below.
 
